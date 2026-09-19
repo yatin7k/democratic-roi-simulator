@@ -804,49 +804,56 @@ differences causally to age.
 with tabs[6]:
     st.subheader("Formal Model")
 
+    st.markdown("### Current-election candidate-specific return")
+    st.latex(r"R_g^C = \frac{s_g m_g}{c_g}")
+
     st.markdown(
         r"""
-### Current-election candidate-specific return
+where \(s_g\) is support probability, \(m_g\) is the immediate
+mobilization effect, and \(c_g\) is mobilization cost.
+"""
+    )
 
-\[
-R_g^C = \frac{s_gm_g}{c_g}
-\]
+    st.markdown("### Geometric downstream-effect assumption")
+    st.latex(r"p_{g,t} = m_g \rho_g^t")
 
-### Geometric downstream-effect assumption
+    st.markdown(
+        r"""
+where \(\rho_g\) is the persistence multiplier for voter group \(g\).
+"""
+    )
 
-\[
-p_{g,t}=m_g\rho_g^t
-\]
+    st.markdown("### Long-run democratic-participation return")
+    st.latex(
+        r"R_g^D = \frac{m_g + \sum_{t=1}^{T}\beta^t p_{g,t}}{c_g}"
+    )
 
-### Long-run democratic-participation return
+    st.markdown("### Organization-specific return")
+    st.latex(
+        r"R_{g,j}^O = "
+        r"\frac{s_{g,0}m_g + "
+        r"\lambda_j\sum_{t=1}^{T}\beta^t s_{g,t}p_{g,t}}{c_g}"
+    )
 
-\[
-R_g^D
-=
-\frac{
-m_g+\sum_{t=1}^{T}\beta^t p_{g,t}
-}{
-c_g
-}
-\]
+    st.markdown("### Internalization parameter")
+    st.latex(r"\lambda_j \in [0,1]")
 
-### Organization-specific return
+    st.markdown(
+        r"""
+\(\lambda_j\) represents the share of future electoral value that
+organization \(j\) effectively values or expects to internalize.
+"""
+    )
 
-\[
-R_{g,j}^O
-=
-\frac{
-s_{g,0}m_g
-+
-\lambda_j\sum_{t=1}^{T}
-\beta^t s_{g,t}p_{g,t}
-}{
-c_g
-}
-\]
+    st.markdown("### Ranking-reversal definition")
+    st.latex(
+        r"R_E^C > R_Y^C"
+        r"\qquad\text{while}\qquad"
+        r"R_Y^D > R_E^D"
+    )
 
-### Ranking-reversal definition
-
+    st.markdown(
+        """
 The project calls a **Democratic ROI Paradox** a case in which two
 profiles receive opposite rankings under the current-election and
 long-run participation objectives.
@@ -864,12 +871,17 @@ randomized youth GOTV field experiments.
 **Youth contact cost.** The same report gives $11–$14 per additional
 vote for youth door-to-door canvassing. Because the formal model needs
 cost per contact/attempt, Research Mode derives a corresponding
-per-contact cost in each Monte Carlo draw as:
+per-contact cost in each Monte Carlo draw using the relationship below.
+"""
+    )
 
-\[
-c_Y = m_Y \times (\text{cost per additional vote})
-\]
+    st.latex(
+        r"c_Y = m_Y \times "
+        r"\left(\text{cost per additional vote}\right)"
+    )
 
+    st.markdown(
+        r"""
 This is a derived approximation and is labeled as such.
 
 **General canvassing benchmark.** Gerber & Green's New Haven field
