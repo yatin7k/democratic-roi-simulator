@@ -1,30 +1,31 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Optional, Dict, Tuple, List
+import math
 
 
-@dataclass
+@dataclass(frozen=True)
 class VoterGroup:
     """
-    Parameters describing one voter group.
+    Parameters for a stylized voter group.
 
+    Parameters
+    ----------
     name:
-        Human-readable group name.
-
+        Human-readable name.
     cost:
-        Cost of one mobilization/contact attempt, c_g.
-
+        Cost per mobilization/contact attempt, c_g.
     mobilization_effect:
         Immediate causal turnout effect of contact, m_g.
-        Example: 0.03 = +3 percentage points.
-
+        Example: 0.03 = 3 percentage points.
     support_probability:
-        Probability that the marginal mobilized voter supports
+        Probability the marginal mobilized voter supports
         the relevant candidate/organization, s_g.
-
     persistence:
-        Fraction of the original mobilization effect assumed to
-        persist from one future election to the next, rho_g.
-        Must be between 0 and 1.
+        Geometric persistence parameter rho_g in [0, 1].
+        Version 1 assumes:
+            p_(g,t) = m_g * rho_g^t
     """
     name: str
     cost: float
@@ -32,26 +33,42 @@ class VoterGroup:
     support_probability: float
     persistence: float
 
+    def validate(self) -> None:
+        if self.cost <= 0:
+            raise ValueError("cost must be > 0")
+        for label, value in [
+            ("mobilization_effect", self.mobilization_effect),
+            ("support_probability", self.support_probability),
+            ("persistence", self.persistence),
+        ]:
+            if not 0 <= value <= 1:
+                raise ValueError(f"{label} must be between 0 and 1")
 
-def downstream_effect(
-    group: VoterGroup,
-    t: int
-) -> float:
+
+def _validate_common(beta: float, horizon: int) -> None:
+    if not 0 <= beta <= 1:
+        raise ValueError("beta must be between 0 and 1")
+    if horizon < 0:
+        raise ValueError("horizon must be >= 0")
+
+
+def downstream_effect(group: VoterGroup, t: int) -> float:
     """
-    Downstream participation effect in future election t.
-
-    Version 0.1 assumes:
+    Version 1 downstream effect:
         p_(g,t) = m_g * rho_g^t
     """
+    group.validate()
+    if t < 1:
+        raise ValueError("t must be >= 1 for a future election")
     return group.mobilization_effect * (group.persistence ** t)
 
 
 def current_election_roi(group: VoterGroup) -> float:
     """
-    Current-cycle candidate-specific electoral return:
-
+    Candidate-specific current-election return:
         R^C_g = (s_g * m_g) / c_g
     """
+    group.validate()
     return (
         group.support_probability
         * group.mobilization_effect
@@ -62,25 +79,22 @@ def current_election_roi(group: VoterGroup) -> float:
 def democratic_roi(
     group: VoterGroup,
     beta: float = 1.0,
-    horizon: int = 4
+    horizon: int = 4,
 ) -> float:
     """
     Long-run democratic-participation return:
-
         R^D_g =
-        [m_g + sum(beta^t * p_(g,t))] / c_g
-
-    horizon = number of FUTURE elections after the current one.
+        [m_g + sum_{t=1..T}(beta^t * p_(g,t))] / c_g
     """
-    future_participation = sum(
+    group.validate()
+    _validate_common(beta, horizon)
+
+    future = sum(
         (beta ** t) * downstream_effect(group, t)
         for t in range(1, horizon + 1)
     )
 
-    return (
-        group.mobilization_effect
-        + future_participation
-    ) / group.cost
+    return (group.mobilization_effect + future) / group.cost
 
 
 def organizational_roi(
@@ -88,38 +102,33 @@ def organizational_roi(
     lambda_internalization: float,
     beta: float = 1.0,
     horizon: int = 4,
-    future_support_probability: float | None = None
+    future_support_probability: Optional[float] = None,
 ) -> float:
     """
-    Organization-specific long-run electoral return:
-
+    Organization-specific intertemporal electoral return:
         R^O_(g,j) =
-        [
-            s_(g,0)m_g
-            +
-            lambda_j *
-            sum(beta^t * s_(g,t) * p_(g,t))
-        ] / c_g
+        [s_(g,0)m_g
+         + lambda_j * sum(beta^t * s_(g,t) * p_(g,t))]
+        / c_g
 
-    lambda_internalization:
-        Share of future electoral value the organization
-        effectively internalizes.
-
-    future_support_probability:
-        Version 0.1 assumes future candidate/party support is
-        constant unless another value is supplied.
+    In Version 1, future support probability defaults to the
+    current support probability.
     """
+    group.validate()
+    _validate_common(beta, horizon)
 
     if not 0 <= lambda_internalization <= 1:
-        raise ValueError("lambda must be between 0 and 1.")
+        raise ValueError("lambda must be between 0 and 1")
 
     future_s = (
         group.support_probability
         if future_support_probability is None
         else future_support_probability
     )
+    if not 0 <= future_s <= 1:
+        raise ValueError("future_support_probability must be between 0 and 1")
 
-    current_value = (
+    immediate_value = (
         group.support_probability
         * group.mobilization_effect
     )
@@ -132,7 +141,7 @@ def organizational_roi(
     )
 
     return (
-        current_value
+        immediate_value
         + lambda_internalization * future_value
     ) / group.cost
 
@@ -141,39 +150,30 @@ def compare_groups(
     group_a: VoterGroup,
     group_b: VoterGroup,
     beta: float = 1.0,
-    horizon: int = 4
-) -> Dict:
+    horizon: int = 4,
+) -> Dict[str, object]:
     """
-    Compare two groups under current-election and
-    long-run democratic objectives.
+    Compare two groups under:
+    1) current-election candidate-specific ROI
+    2) long-run democratic participation ROI
     """
-
     current_a = current_election_roi(group_a)
     current_b = current_election_roi(group_b)
+    democratic_a = democratic_roi(group_a, beta, horizon)
+    democratic_b = democratic_roi(group_b, beta, horizon)
 
-    democratic_a = democratic_roi(
-        group_a, beta, horizon
-    )
-    democratic_b = democratic_roi(
-        group_b, beta, horizon
-    )
+    def winner(a: float, b: float) -> str:
+        if math.isclose(a, b, rel_tol=1e-12, abs_tol=1e-15):
+            return "Tie"
+        return group_a.name if a > b else group_b.name
 
-    current_winner = (
-        group_a.name if current_a > current_b
-        else group_b.name if current_b > current_a
-        else "Tie"
-    )
+    current_winner = winner(current_a, current_b)
+    democratic_winner = winner(democratic_a, democratic_b)
 
-    democratic_winner = (
-        group_a.name if democratic_a > democratic_b
-        else group_b.name if democratic_b > democratic_a
-        else "Tie"
-    )
-
-    paradox_exists = (
-        current_winner != democratic_winner
-        and current_winner != "Tie"
+    paradox = (
+        current_winner != "Tie"
         and democratic_winner != "Tie"
+        and current_winner != democratic_winner
     )
 
     return {
@@ -187,102 +187,102 @@ def compare_groups(
         },
         "current_winner": current_winner,
         "democratic_winner": democratic_winner,
-        "democratic_roi_paradox": paradox_exists,
+        "democratic_roi_paradox": paradox,
     }
 
 
-def print_comparison(result: Dict) -> None:
-    print("\nCURRENT-ELECTION ROI")
-    for group, roi in result["current_roi"].items():
-        print(f"{group}: {roi:.6f}")
+def organizational_components(
+    group: VoterGroup,
+    beta: float = 1.0,
+    horizon: int = 4,
+    future_support_probability: Optional[float] = None,
+) -> Tuple[float, float]:
+    """
+    Return the affine decomposition:
+        R^O_g(lambda) = intercept + lambda * slope
+    """
+    group.validate()
+    _validate_common(beta, horizon)
 
-    print("\nLONG-RUN DEMOCRATIC ROI")
-    for group, roi in result["democratic_roi"].items():
-        print(f"{group}: {roi:.6f}")
-
-    print(
-        "\nCurrent-election preferred group:",
-        result["current_winner"]
+    future_s = (
+        group.support_probability
+        if future_support_probability is None
+        else future_support_probability
     )
 
-    print(
-        "Long-run participation preferred group:",
-        result["democratic_winner"]
+    intercept = (
+        group.support_probability
+        * group.mobilization_effect
+        / group.cost
     )
 
-    print(
-        "Democratic ROI Paradox:",
-        result["democratic_roi_paradox"]
+    slope = sum(
+        (beta ** t)
+        * future_s
+        * downstream_effect(group, t)
+        for t in range(1, horizon + 1)
+    ) / group.cost
+
+    return intercept, slope
+
+
+def exact_lambda_threshold(
+    group_a: VoterGroup,
+    group_b: VoterGroup,
+    beta: float = 1.0,
+    horizon: int = 4,
+) -> Optional[float]:
+    """
+    Solve exactly for lambda* where:
+        R^O_a(lambda*) = R^O_b(lambda*)
+
+    Returns None if:
+    - the lines never cross,
+    - they overlap everywhere, or
+    - the crossing lies outside [0, 1].
+    """
+    a0, a1 = organizational_components(group_a, beta, horizon)
+    b0, b1 = organizational_components(group_b, beta, horizon)
+
+    denominator = a1 - b1
+    numerator = b0 - a0
+
+    if math.isclose(denominator, 0.0, abs_tol=1e-15):
+        return None
+
+    threshold = numerator / denominator
+
+    if 0 <= threshold <= 1:
+        return threshold
+    return None
+
+
+def organizational_preference(
+    group_a: VoterGroup,
+    group_b: VoterGroup,
+    lambda_internalization: float,
+    beta: float = 1.0,
+    horizon: int = 4,
+) -> str:
+    a = organizational_roi(
+        group_a, lambda_internalization, beta, horizon
+    )
+    b = organizational_roi(
+        group_b, lambda_internalization, beta, horizon
     )
 
+    if math.isclose(a, b, rel_tol=1e-12, abs_tol=1e-15):
+        return "Tie"
+    return group_a.name if a > b else group_b.name
 
-if __name__ == "__main__":
 
-    # ---------------------------------------------------------
-    # ILLUSTRATIVE VALUES ONLY.
-    # These are NOT empirical estimates.
-    # ---------------------------------------------------------
-
-    young_voters = VoterGroup(
-        name="Young / First-Time Voters",
-        cost=5.00,
-        mobilization_effect=0.030,
-        support_probability=0.55,
-        persistence=0.60,
-    )
-
-    established_voters = VoterGroup(
-        name="Established Voters",
-        cost=5.00,
-        mobilization_effect=0.050,
-        support_probability=0.55,
-        persistence=0.15,
-    )
-
-    beta = 0.95
-    horizon = 4
-
-    result = compare_groups(
-        young_voters,
-        established_voters,
-        beta=beta,
-        horizon=horizon,
-    )
-
-    print_comparison(result)
-
-    # Example: compare organizational ROI at
-    # different internalization levels.
-
-    print("\nORGANIZATIONAL ROI BY λ")
-
-    for lam in [0.0, 0.25, 0.50, 0.75, 1.0]:
-
-        young_org = organizational_roi(
-            young_voters,
-            lambda_internalization=lam,
-            beta=beta,
-            horizon=horizon,
-        )
-
-        established_org = organizational_roi(
-            established_voters,
-            lambda_internalization=lam,
-            beta=beta,
-            horizon=horizon,
-        )
-
-        preferred = (
-            young_voters.name
-            if young_org > established_org
-            else established_voters.name
-            if established_org > young_org
-            else "Tie"
-        )
-
-        print(
-            f"λ={lam:.2f} | "
-            f"Young={young_org:.6f} | "
-            f"Established={established_org:.6f} | "
-            f"Preferred={preferred}"
-        )
+def roi_curve(
+    group: VoterGroup,
+    lambdas: List[float],
+    beta: float = 1.0,
+    horizon: int = 4,
+) -> List[float]:
+    return [
+        organizational_roi(group, lam, beta, horizon)
+        for lam in lambdas
+    ]
