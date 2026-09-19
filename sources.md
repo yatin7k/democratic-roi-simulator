@@ -1,104 +1,41 @@
-# Sources and Parameter Documentation
+# Source Notes
 
-This file should become the audit trail for every empirical parameter used by
-the Democratic ROI Simulator.
+The machine-readable source audit is in `data/sources.csv`.
 
-## Important rule
+## Youth mobilization
 
-**Do not replace illustrative values with empirical values unless the original
-source has been personally verified.**
+Young Voter Strategies / CIRCLE (2006), *Youth Voter Mobilization Tactics*.
+The report synthesizes randomized youth GOTV field experiments and reports
+roughly 7–10 percentage-point effects for door-to-door canvassing and roughly
+$11–$14 per additional vote.
 
-For every empirical input, record:
+## General canvassing benchmark
 
-- full citation
-- stable URL / DOI
-- exact sample
-- election/context
-- treatment type
-- outcome definition
-- point estimate
-- uncertainty interval
-- whether the estimate is causal
-- which simulator parameter it informs
-- important limitations
+Gerber & Green (2000), APSR.
+Randomized New Haven GOTV experiment. The paper reports strong effects of
+personal canvassing; the covariate-adjusted two-stage estimate is about 9.8
+percentage points with SE about 2.2 points.
 
----
+## Habit formation
 
-## Parameter map
+Gerber, Green & Shachar (2003) show downstream effects of randomized
+mobilization.
 
-### m_g — Immediate mobilization effect
+Coppock & Green (2016) synthesize/extend experimental and regression-
+discontinuity evidence and conclude that voting is habit-forming, with public
+summaries describing an average effect on future voting around 10 percentage
+points and substantial heterogeneity.
 
-Needed:
-- randomized or strong quasi-experimental GOTV estimates
-- ideally by age or first-time-voter status
-- effects separated by contact method where possible
+Dinas et al. (2024) emphasize that early voting experiences have
+context-dependent downstream effects.
 
-Current status:
-- illustrative only
+Plutzer (2002) provides a developmental theory of turnout in young adulthood.
 
-### c_g — Cost per contact / mobilization
+## Rule for future updates
 
-Needed:
-- field-experiment or campaign-program cost estimates
-- must distinguish cost per attempted contact from cost per successful contact
-  and cost per additional vote
-
-Current status:
-- illustrative only
-
-### rho_g / p_(g,t) — Persistence
-
-Needed:
-- studies of turnout persistence or habit formation
-- ideally with multiple post-treatment elections
-- investigate whether persistence differs by age / first electoral experience
-
-Current status:
-- geometric persistence assumption for exploration only
-
-### s_g — Support probability
-
-Needed:
-- this may remain a scenario parameter rather than a fixed empirical quantity
-- actual support probabilities vary by candidate, election, place, and group
-
-Current status:
-- illustrative only
-
-### beta — Discount factor
-
-Normative / analytical parameter.
-Should generally be scenario-based rather than presented as an empirical fact.
-
-### lambda — Organizational internalization
-
-Theoretical parameter representing the share of future electoral value that
-an organization effectively values or expects to internalize.
-
-Current status:
-- theoretical scenario parameter
-- no empirical estimate claimed
-
----
-
-## Literature review notes
-
-Add verified sources here as they are read.
-
-### Source 1
-Citation:
-Question:
-Data:
-Method:
-Finding:
-Parameter relevance:
-Limitations:
-
-### Source 2
-Citation:
-Question:
-Data:
-Method:
-Finding:
-Parameter relevance:
-Limitations:
+Never add an empirical parameter unless:
+1. the source has been personally verified,
+2. the quantity and units match the model,
+3. the study context is documented,
+4. uncertainty is represented honestly,
+5. limitations are stated.
