@@ -965,6 +965,9 @@ That stronger claim would require a much richer empirical design.
 with tabs[7]:
     st.subheader("About the Project")
 
+    st.markdown("### Created by")
+    st.markdown("**Yatin Karri — VCU Political Science**")
+
     st.markdown(
         """
 The Democratic ROI Simulator is a public companion to an independent
