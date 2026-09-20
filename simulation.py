@@ -124,8 +124,8 @@ def run_monte_carlo(
     # Same evidence band, independent uncertainty draws.
     common_persistence = sample(persistence_spec, n, rng)
 
-y_persistence = common_persistence
-e_persistence = common_persistence
+    y_persistence = common_persistence
+    e_persistence = common_persistence
 
     y_support = np.full(n, young_support)
     e_support = np.full(n, general_support)
