@@ -24,7 +24,7 @@ from simulation import (
 
 
 st.set_page_config(
-    page_title="Democratic ROI Simulator",
+    page_title="The Democratic ROI Paradox",
     page_icon="🗳️",
     layout="wide",
 )
@@ -177,28 +177,127 @@ def results_sentence(comparison, threshold, lam, y_org, e_org):
 # Header
 # ---------------------------------------------------------
 
-st.title("Democratic ROI Simulator")
+# ---------------------------------------------------------
+# Home Page
+# ---------------------------------------------------------
+
+st.title("The Democratic ROI Paradox")
+
+st.markdown(
+    "**An interactive model of short-run electoral incentives "
+    "and long-run democratic participation**"
+)
+
+st.caption(
+    "Yatin Karri · VCU Political Science · Independent Research Prototype"
+)
+
+st.divider()
+
+st.markdown("### Research Question")
 
 st.markdown(
     """
-A transparent research prototype for asking when **current-election
-electoral optimization** and **long-run democratic participation**
-produce different rankings of mobilization investments.
+**When can a political organization rationally prefer one voter-mobilization
+investment in the current election even though a different investment would
+generate more democratic participation over time?**
+
+This project develops a formal model of voter-mobilization allocation under
+competing objectives. It compares immediate candidate-specific electoral
+returns with a long-run participation benchmark and asks how organizational
+time horizons can alter the preferred allocation of mobilization resources.
 """
 )
 
+st.divider()
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.markdown("#### Current-Election ROI")
+    st.markdown(
+        """
+        Measures expected **candidate-specific electoral return per dollar**
+        from mobilization in the present election.
+        """
+    )
+
+with col2:
+    st.markdown("#### Long-Run Participation ROI")
+    st.markdown(
+        """
+        Measures expected **democratic participation generated per dollar**
+        across the current and future elections.
+        """
+    )
+
+with col3:
+    st.markdown("#### Organizational ROI")
+    st.markdown(
+        """
+        Introduces **λ**, an internalization parameter governing how much
+        future electoral value an organization weighs in present decisions.
+        """
+    )
+
+st.divider()
+
+st.markdown("### Working Hypothesis")
+
+st.markdown(
+    """
+The model investigates whether an intertemporal incentive problem can arise
+when the actor paying the present cost of voter mobilization does not fully
+internalize its downstream electoral value.
+
+I call this potential mechanism the **Democratic Investment Externality**.
+
+A **Democratic ROI Paradox** occurs when the voter profile preferred under
+the current-election objective differs from the profile preferred under the
+long-run democratic-participation objective.
+"""
+)
+
+st.info(
+    """
+**Important interpretation:** The simulator does not establish that campaigns
+systematically underinvest in young voters. It identifies the assumptions and
+empirical conditions under which such a ranking reversal can occur. Research
+Mode currently compares literature-calibrated study profiles rather than a
+causally identified young-versus-established-voter experiment.
+"""
+)
+
+st.markdown("### Explore the Model")
+
 mode = st.radio(
-    "Model mode",
-    ["Illustrative Mode", "Literature-Calibrated Research Mode"],
+    "Choose a model mode:",
+    [
+        "Illustrative Mode",
+        "Literature-Calibrated Research Mode",
+    ],
     horizontal=True,
+    help=(
+        "Illustrative Mode allows unrestricted scenario exploration. "
+        "Research Mode uses literature-based parameter ranges where available."
+    ),
 )
 
 if mode == "Illustrative Mode":
     st.warning(
-        "Illustrative Mode uses user-selected assumptions. "
-        "Nothing in this mode is an empirical claim."
+        """
+        **Illustrative Mode:** Parameters are user-selected assumptions.
+        Outputs from this mode should not be interpreted as empirical findings.
+        """
     )
 else:
+    st.success(
+        """
+        **Research Mode:** Empirical inputs are calibrated from cited research
+        where possible. The Sources and Methodology tabs document the
+        calibration, assumptions, and limitations.
+        """
+    )
     st.info(
         "Research Mode uses verified literature-based inputs where possible. "
         "It is still exploratory: the two profiles come from different studies "
