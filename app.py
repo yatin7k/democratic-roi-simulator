@@ -75,11 +75,23 @@ def render_source_expander(parameter_id: str):
         return
 
     row = joined.iloc[0]
+
+    parameter_limitation = row.get(
+        "limitation_parameter",
+        row.get("limitation", "Not specified.")
+    )
+    source_limitation = row.get(
+        "limitation_source",
+        None
+    )
+
     with st.expander(f"Source & assumptions — {row['display_name']}"):
         st.markdown(f"**Source:** {row['citation']}")
         st.markdown(f"**Context:** {row['context']}")
         st.markdown(f"**Model use:** {row['model_use']}")
-        st.markdown(f"**Limitation:** {row['limitation']}")
+        st.markdown(f"**Parameter limitation:** {parameter_limitation}")
+        if source_limitation is not None and str(source_limitation) != "nan":
+            st.markdown(f"**Study limitation:** {source_limitation}")
         st.markdown(f"**URL:** {row['url']}")
 
 
